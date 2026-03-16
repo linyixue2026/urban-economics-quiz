@@ -28,7 +28,8 @@ UrbanEconomics-quiz/
 | **考试页面（Netlify）** | https://dashing-manatee-7619b2.netlify.app/?id=test1 |
 | **成绩API（Cloudflare Worker）** | https://urban-economics-quiz.linyixue2026.workers.dev |
 | **GitHub 仓库** | https://github.com/linyixue2026/urban-economics-quiz |
-| **飞书成绩表** | https://dobnc6imym.feishu.cn/base/LBuwbG3pBaNxNXsimBaciB4incb |
+| **飞书成绩表（主）** | https://dobnc6imym.feishu.cn/base/LBuwbG3pBaNxNXsimBaciB4incb |
+| **Google Sheets（备份）** | （教师个人 Google 表格） |
 
 ---
 
@@ -208,7 +209,14 @@ print('Done!')
 
 ### 数据存储位置
 
-成绩数据存储在**飞书多维表格**（Bitable）中，**不是**存在 Cloudflare Worker 或 Netlify 上。
+成绩数据**同时写入两个平台**（双备份）：
+
+| 平台 | 角色 | 说明 |
+|------|------|------|
+| **飞书多维表格** | 主存储 | 实时写入，教师主要查看 |
+| **Google Sheets** | 备份存储 | 同时写入，双重保险 |
+
+Cloudflare Worker 收到成绩后，会同时向两个平台提交。即使一个平台出问题，另一个还有数据。
 
 ### 数据会不会丢失？
 

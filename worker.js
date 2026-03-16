@@ -12,6 +12,7 @@
 
 const FEISHU_BITABLE_APP = 'LBuwbG3pBaNxNXsimBaciB4incb';
 const FEISHU_BITABLE_TABLE = 'tblzLgA1IFA3Q5Na';
+const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxj1zZQc6g_MNMol2ai8u4E6_8zaqyq2PYh7iwKFyj3b6UbUUTjuFnLWEch3l4LZS-evQ/exec';
 
 // CORS headers
 const CORS_HEADERS = {
@@ -119,6 +120,28 @@ async function submitScore(env, payload) {
     
     const data = await resp.json();
     if (data.code !== 0) throw new Error(`Bitable write failed: ${data.msg}`);
+    
+    // 同时写入 Google Sheets 备份（不阻塞主流程）
+    try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                submit_time: new Date().toISOString(),
+                quiz_title: payload.quiz_title || '',
+                quiz_id: payload.quiz_id || '',
+                student_id: payload.student_id || '',
+                student_name: payload.student_name || '',
+                score: payload.score || 0,
+                duration: payload.duration || 0,
+                switch_count: payload.switch_count || 0,
+                exam_type: payload.exam_type || '初试',
+                details: payload.details || ''
+            })
+        });
+    } catch (err) {
+        console.warn('Google Sheets backup failed:', err.message);
+    }
     
     return { success: true, record_id: data.data?.record?.id };
 }
