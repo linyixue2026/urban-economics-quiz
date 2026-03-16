@@ -1,0 +1,7 @@
+name = "urban-economics-quiz"
+main = "worker.js"
+compatibility_date = "2024-01-01"
+
+[vars]
+FEISHU_BITABLE_APP = "LBuwbG3pBaNxNXsimBaciB4incb"
+FEISHU_BITABLE_TABLE = "tblzLgA1IFA3Q5Na"

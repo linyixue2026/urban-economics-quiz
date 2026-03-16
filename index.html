@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+    <title>城市经济学 - 课堂小测</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root{--primary:#6366f1;--primary-light:#818cf8;--secondary:#10b981;--danger:#ef4444;--warning:#f59e0b;--bg:#f8fafc;--card:#fff;--text:#1e293b;--text2:#64748b;--border:#e2e8f0}
+        *{margin:0;padding:0;box-sizing:border-box}
+        body{font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+        
+        /* Header */
+        .header{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;padding:16px 20px;display:flex;justify-content:space-between;align-items:center;box-shadow:0 2px 10px rgba(99,102,241,.3)}
+        .header h1{font-size:1.1em}
+        .user-info{display:flex;align-items:center;gap:8px;font-size:.9em}
+        .mode-badge{padding:4px 12px;border-radius:20px;font-size:.75em;font-weight:600}
+        .mode-quiz{background:rgba(255,255,255,.2)}
+        
+        /* Timer */
+        .timer-float{position:fixed;top:70px;right:16px;background:var(--card);padding:10px 16px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1);font-weight:700;font-size:1em;z-index:100;border:2px solid var(--primary)}
+        .timer-float.danger{border-color:var(--danger);color:var(--danger);animation:pulse 1s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+        
+        /* Progress */
+        .progress-container{background:var(--border);height:6px;margin:0}
+        .progress-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .3s;border-radius:0 3px 3px 0}
+        
+        /* Container */
+        .container{max-width:700px;margin:0 auto;padding:20px}
+        
+        /* Views */
+        .view{display:none}
+        .view.active{display:block}
+        
+        /* Cards */
+        .card{background:var(--card);border-radius:16px;padding:28px;box-shadow:0 4px 20px rgba(0,0,0,.06);border:1px solid var(--border)}
+        .card-title{font-size:1.4em;font-weight:700;margin-bottom:20px;color:var(--primary)}
+        
+        /* Entrance */
+        .entrance-card{max-width:480px;margin:40px auto}
+        .input-group{margin-bottom:18px}
+        .form-label{display:block;font-size:.85em;font-weight:600;color:var(--text);margin-bottom:6px}
+        .form-input{width:100%;padding:12px 16px;border:2px solid var(--border);border-radius:10px;font-size:1em;transition:border-color .2s;font-family:inherit}
+        .form-input:focus{outline:none;border-color:var(--primary)}
+        .form-input:read-only{background:#f1f5f9;cursor:not-allowed}
+        .form-input.valid{border-color:var(--secondary)}
+        .form-input.invalid{border-color:var(--danger)}
+        .btn{padding:14px 28px;border:none;border-radius:12px;font-size:1em;font-weight:600;cursor:pointer;transition:all .2s;font-family:inherit;width:100%}
+        .btn-primary{background:var(--primary);color:#fff}
+        .btn-primary:hover:not(:disabled){background:var(--primary-light)}
+        .btn-primary:disabled{background:#cbd5e1;cursor:not-allowed}
+        .btn-secondary{background:var(--border);color:var(--text)}
+        .btn-secondary:hover{background:#cbd5e1}
+        .feedback{margin-top:12px;font-size:.85em;text-align:center;min-height:20px}
+        .feedback.success{color:var(--secondary)}
+        .feedback.error{color:var(--danger)}
+        
+        /* Quiz */
+        .quiz-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;font-size:.85em;color:var(--text2)}
+        .quiz-id{font-weight:600;color:var(--primary)}
+        .question-num{font-weight:600}
+        .type-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:.75em;font-weight:600;margin-right:8px}
+        .type-single{background:#dbeafe;color:#1d4ed8}
+        .type-multiple{background:#fef3c7;color:#b45309}
+        .question-text{font-size:1.1em;line-height:1.6;margin-bottom:24px;padding:20px;background:#f8fafc;border-radius:12px;border-left:4px solid var(--primary)}
+        
+        /* Options */
+        .option-item{padding:14px 18px;border:2px solid var(--border);border-radius:12px;margin-bottom:10px;cursor:pointer;transition:all .15s;font-size:.95em;line-height:1.5;user-select:none}
+        .option-item:hover{border-color:var(--primary-light);background:#f8fafc}
+        .option-item.selected{border-color:var(--primary);background:#eef2ff;color:var(--primary);font-weight:500}
+        .option-item.correct{border-color:var(--secondary);background:#ecfdf5;color:#065f46}
+        .option-item.wrong{border-color:var(--danger);background:#fef2f2;color:#991b1b}
+        
+        /* Actions */
+        .actions{display:flex;gap:12px;margin-top:20px}
+        .actions .btn{flex:1}
+        
+        /* Anti-cheat warning */
+        .anti-cheat-warn{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--danger);color:#fff;padding:20px 30px;border-radius:16px;font-weight:600;font-size:1.1em;z-index:9999;text-align:center;box-shadow:0 10px 40px rgba(239,68,68,.4);animation:shake .5s}
+        @keyframes shake{0%,100%{transform:translate(-50%,-50%)}25%{transform:translate(-48%,-50%)}75%{transform:translate(-52%,-50%)}}
+        
+        /* Results */
+        .result-score{font-size:4em;font-weight:800;text-align:center;margin:20px 0}
+        .result-score.pass{color:var(--secondary)}
+        .result-score.fail{color:var(--danger)}
+        .result-detail{margin:20px 0;font-size:.9em;color:var(--text2)}
+        .result-detail div{margin:8px 0}
+        .result-actions{display:flex;gap:12px;margin-top:24px}
+        .review-item{padding:16px;border:1px solid var(--border);border-radius:12px;margin-bottom:12px}
+        .review-item.correct{border-left:4px solid var(--secondary)}
+        .review-item.wrong{border-left:4px solid var(--danger)}
+        .review-q{font-weight:600;margin-bottom:8px}
+        .review-your{font-size:.9em}
+        .review-your span{font-weight:600}
+        .review-correct .your-answer{color:var(--danger)}
+        .review-correct .right-answer{color:var(--secondary)}
+
+        /* Overlay */
+        .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center}
+        .overlay.active{display:flex}
+        .overlay-content{background:#fff;border-radius:20px;padding:40px;text-align:center;max-width:400px;width:90%}
+        .spinner{width:40px;height:40px;border:4px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        @media(max-width:480px){.container{padding:12px}.card{padding:20px}.question-text{font-size:1em}.timer-float{right:8px;font-size:.85em;padding:8px 12px}}
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📚 城市经济学 - 课堂小测</h1>
+        <div class="user-info">
+            <span>👤</span>
+            <span id="headerName">未登录</span>
+        </div>
+    </div>
+
+    <!-- Entrance -->
+    <div id="viewEntrance" class="view active">
+        <div class="container">
+            <div class="card entrance-card">
+                <div class="card-title" id="quizTitle">Test 1</div>
+                
+                <div class="input-group">
+                    <label class="form-label">学号 / Student ID</label>
+                    <input type="text" id="studentId" class="form-input" placeholder="输入你的学号" autocomplete="off">
+                </div>
+                
+                <div class="input-group">
+                    <label class="form-label">姓名 / Name</label>
+                    <input type="text" id="studentName" class="form-input" placeholder="输入学号后自动补全" readonly>
+                </div>
+                
+                <div class="input-group">
+                    <label class="form-label">考试码 / Entry Code</label>
+                    <input type="password" id="entryCode" class="form-input" placeholder="输入老师提供的考试码" autocomplete="off">
+                </div>
+                
+                <button id="btnStart" class="btn btn-primary" disabled>开始考试</button>
+                <div id="loginFeedback" class="feedback"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz -->
+    <div id="viewQuiz" class="view">
+        <div class="timer-float" id="timer">⏱ 15:00</div>
+        <div class="progress-container"><div class="progress-bar" id="progressBar"></div></div>
+        <div class="container">
+            <div class="quiz-header">
+                <span class="quiz-id" id="quizId">TEST 1</span>
+                <span class="question-num">第 <span id="qNum">1</span>/<span id="qTotal">10</span> 题</span>
+            </div>
+            <div class="card" id="quizCard">
+                <div class="question-text" id="questionText"></div>
+                <div id="optionsList"></div>
+                <div class="actions">
+                    <button id="btnPrev" class="btn btn-secondary" style="display:none">⬅ 上一题</button>
+                    <button id="btnNext" class="btn btn-primary" disabled>下一题 ➡</button>
+                </div>
+            </div>
+            <div style="text-align:center;margin-top:12px;font-size:.8em;color:var(--text2)">
+                ⚠️ 切屏/截屏超过 <b>3次</b> 将强制交卷 | 已切换 <span id="switchCount" style="color:var(--danger);font-weight:700">0</span> 次
+            </div>
+        </div>
+    </div>
+
+    <!-- Results -->
+    <div id="viewResult" class="view">
+        <div class="container">
+            <div class="card">
+                <div class="card-title" style="text-align:center">📊 测验结果</div>
+                <div class="result-score" id="scoreDisplay">0</div>
+                <div style="text-align:center;font-size:.95em;margin-bottom:20px" id="scoreText"></div>
+                <div class="result-detail" id="resultDetail"></div>
+                <div class="result-actions">
+                    <button class="btn btn-secondary" onclick="showReview()">📋 查看答卷</button>
+                    <button class="btn btn-primary" id="btnRetake" onclick="location.reload()" style="display:none">🔄 重考</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Review -->
+    <div id="viewReview" class="view">
+        <div class="container">
+            <div class="card">
+                <div class="card-title">📋 答卷回顾</div>
+                <div id="reviewList"></div>
+                <button class="btn btn-secondary" onclick="showView('viewResult')" style="margin-top:16px">⬅ 返回结果</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay -->
+    <div class="overlay" id="overlay">
+        <div class="overlay-content">
+            <div class="spinner" id="overlaySpinner"></div>
+            <p id="overlayText">提交中...</p>
+        </div>
+    </div>
+
+<script>
+// ============================================
+// CONFIG - Quiz Data & Settings
+// ============================================
+const CONFIG = {
+    apiUrl: 'https://urban-economics-quiz.linyixue2026.workers.dev',
+    bitableAppToken: 'LBuwbG3pBaNxNXsimBaciB4incb',
+    bitableTableId: 'tblzLgA1IFA3Q5Na',
+    feishuUrl: 'https://dobnc6imym.feishu.cn/base/LBuwbG3pBaNxNXsimBaciB4incb'
+};
+
+// Student list (姓名,学号)
+const STUDENTS = [
+    {name:"冉凤祥",id:"3241711101"},{name:"陈浩",id:"3241711105"},{name:"许静",id:"3241711106"},
+    {name:"刘明卓",id:"3241711107"},{name:"唐本涛",id:"3241711109"},{name:"叶军军",id:"3241711113"},
+    {name:"尹凯冬",id:"3241711114"},{name:"黄鑫琦",id:"3241711116"},{name:"秦雨叶",id:"3241711117"},
+    {name:"朱航",id:"3241711118"},{name:"郭容壮",id:"3241711119"},{name:"彭兴伟",id:"3241711120"},
+    {name:"张金果",id:"3241711121"},{name:"戴龙柯",id:"3241711122"},{name:"郭又鑫",id:"3241711123"},
+    {name:"毛相捷",id:"3241711126"},{name:"林渝桐",id:"3241711127"},{name:"李蕾",id:"3241711129"},
+    {name:"韩治国",id:"3241711130"},{name:"刘逸",id:"3241711131"},{name:"彭嘉俊",id:"3241711132"},
+    {name:"余静",id:"3241711133"},{name:"徐英河",id:"3241711134"},{name:"常伟林",id:"3241711135"},
+    // 测试账号
+    {name:"测试1",id:"test01"},{name:"测试2",id:"test02"}
+];
+
+// Question Bank (add more quizzes here)
+const QUIZZES = {
+    'test1': {
+        title: 'Test 1 - 城市的产生',
+        entryCode: 'UE2026',
+        resetCode: 'RESET01',
+        timeLimit: 15 * 60, // 15 minutes
+        totalPick: 10, // pick 10 random questions
+        questions: [
+            {id:1, type:'single', q:'经济学在研究城市是如何产生时，"反向思维法"具体是指什么？',
+             options:['先研究城市产生后的经济衰退现象','先研究工业革命前的历史文献','先设想"无城市"的条件，再逐步放松这些条件看城市如何产生','从大城市的现状倒推小城镇的起源'], answer:2},
+            {id:2, type:'single', q:'在"自给自足—人口均匀分布模型"中，为了排除交通条件差异的影响，提出了哪项核心假设？',
+             options:['所有人在区域内的通行方式和速度都一样','所有家庭在区域内的通行方式和速度都一样','不存在任何规模经济','所有区域的土地肥沃程度完全一致'], answer:1},
+            {id:3, type:'single', q:'根据"自给自足—人口均匀分布模型"，如果所有家庭在生产小麦和毛料上的能力完全一样，会导致什么最直接的经济结果？',
+             options:['出现集中的大型工厂','出现跨区域的大规模贸易','没有任何分工和贸易行为','形成多个小型的市场型城市'], answer:2},
+            {id:4, type:'single', q:'19世纪经济学家大卫·李嘉图提出的革命性理论指出，即使一方在所有产品的生产上都全面落后，也能找到分工的机会。这一理论是？',
+             options:['绝对优势原理','比较优势原理','外部规模经济原理','边际成本递减原理'], answer:1},
+            {id:5, type:'single', q:'在经济学的比较优势原理中，决定分工的关键指标"机会成本"是指什么？',
+             options:['生产一件产品所耗费的所有原材料总和','做一件事情而放弃的另一件事情的收益','运输货物到交易地点所需的时间和金钱','扩大生产规模时购买新机器的投入'], answer:1},
+            {id:6, type:'single', q:'贸易能否真正发生并最终促成市场型城市的出现，取决于哪两个关键经济条件？',
+             options:['绝对优势明显且政府补贴充足','生产率差异足够大且运输成本足够低','人口自然增长率高且土地资源丰富','工业设备先进且劳动力成本低廉'], answer:1},
+            {id:7, type:'single', q:'中国古代名城苏州的阊门地区之所以能出现"天下财货莫不聚于苏州"的繁华景象，其核心逻辑是？',
+             options:['苏州本地的重工业极其发达','临近大运河中段，交通便利显著降低了运输成本','当地实施了免除所有商业税收的政策','拥有中国古代最大的海港口岸'], answer:1},
+            {id:8, type:'single', q:'工业型城市的产生离不开"规模经济"。在经济学中，"规模经济"通常是指什么现象？',
+             options:['产量增加快于投入增加，平均成本随产量增加而下降','企业规模越小，管理效率和利润率越高','产量越大，每多生产一件产品的边际成本越高','多家企业集聚导致土地租金不断上升'], answer:0},
+            {id:9, type:'single', q:'促使生产出现规模经济的三个原因，以下哪一项不属于这三个原因？',
+             options:['劳动分工','机器设备的有效利用','政府提供的财政补贴','大批量采购原材料'], answer:2},
+            {id:10, type:'single', q:'19世纪英国的布拉德福德从一个小镇发展成为"世界羊毛之都"，其转折点是工业革命带来的什么变化？',
+             options:['开展了跨国的大规模羊毛自由贸易','引入机器梳理技术和蒸汽机普及，小作坊被大工厂挤出市场','当地政府建设了完善的工人生活园区','成功挖掘了连接伦敦的人工运河'], answer:1},
+            {id:11, type:'single', q:'湖南浏阳花炮产业集群完美解释了哪一种经济学概念？',
+             options:['外部规模经济','绝对劣势原理','市场失灵理论','边际效用递减'], answer:0},
+            {id:12, type:'single', q:'浏阳花炮产业集群体现出的"外部规模经济"优势，主要表现在以下哪三个方面？',
+             options:['极致的专业化分工、完整的产业链配套、知识溢出和技术创新','大机器设备的引入、单个工厂产能极大化、原材料自给自足','交通工具的升级、关税壁垒的消除、跨国公司的垄断','农业人口的转移、城市绿化面积的扩大、教育资源的集中'], answer:0},
+            {id:13, type:'single', q:'无论是市场型城市还是工业型城市的产生，都必须具备的一个共同基础条件是？',
+             options:['必须拥有深水港口或铁路枢纽','必须引入大量现代化的机器设备','农业生产力足够高，能养活城市人口（或工人）','必须先建立完善的工会组织'], answer:2},
+            {id:14, type:'single', q:'产业革命带来了建筑物钢铁框架对砖瓦框架的替代以及电梯的应用，促成了摩天大楼的出现，这对城市发展最直接的影响是？',
+             options:['扩大了城市的地理半径','极大增加了单位土地上的人口容量','降低了城市的交通运输成本','促进了农业人口的自然增长'], answer:1},
+            {id:15, type:'single', q:'产业革命引发的"运输革命"（如电车、小汽车的应用）给城市带来的最主要空间变化是？',
+             options:['城市中心区域开始衰落','城市的人口容量开始急剧下降','扩大了城市的地理半径和面积','城市的住宅区全部转移到地下'], answer:2},
+            {id:16, type:'single', q:'从美国城市化的历史经验中可以得出，当一国城市化率超过多少时，其上升步伐会明显减缓？',
+             options:['30%','50%','70%','90%'], answer:2},
+            {id:17, type:'single', q:'纵观中西方城市化历史，城市化发展的最关键推动力是什么？',
+             options:['防御工事的修建','农业技术的停滞','产业革命','宗教仪式的大众化'], answer:2}
+        ]
+    }
+};
+
+// ============================================
+// STATE
+// ============================================
+let currentQuiz = null;
+let currentUser = null;
+let selectedQuestions = [];
+let userAnswers = [];
+let currentIndex = 0;
+let switchCount = 0;
+const MAX_SWITCHES = 3;
+let timerInterval = null;
+let timeLeft = 0;
+let startTime = 0;
+
+// ============================================
+// INIT
+// ============================================
+document.addEventListener('DOMContentLoaded', () => {
+    const quizId = getQuizId();
+    if (!quizId || !QUIZZES[quizId]) {
+        document.getElementById('quizTitle').textContent = '⚠️ 无效的测验链接';
+        document.getElementById('loginFeedback').textContent = '请通过老师发布的官方链接进入';
+        document.getElementById('loginFeedback').className = 'feedback error';
+        return;
+    }
+    
+    currentQuiz = QUIZZES[quizId];
+    document.getElementById('quizTitle').textContent = currentQuiz.title;
+    document.getElementById('quizId').textContent = currentQuiz.title.toUpperCase();
+    
+    setupEntrance();
+    setupAntiCheat();
+});
+
+function getQuizId() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+}
+
+// ============================================
+// ENTRANCE
+// ============================================
+function setupEntrance() {
+    const idInput = document.getElementById('studentId');
+    const nameInput = document.getElementById('studentName');
+    const codeInput = document.getElementById('entryCode');
+    const startBtn = document.getElementById('btnStart');
+    const feedback = document.getElementById('loginFeedback');
+    
+    function validate() {
+        const sid = idInput.value.trim();
+        const code = codeInput.value.trim();
+        feedback.textContent = '';
+        feedback.className = 'feedback';
+        
+        // Lookup student
+        const student = STUDENTS.find(s => s.id === sid);
+        if (sid.length >= 4 && student) {
+            nameInput.value = student.name;
+            nameInput.classList.add('valid');
+            nameInput.classList.remove('invalid');
+            feedback.textContent = `✔ 欢迎你，${student.name}`;
+            feedback.className = 'feedback success';
+            currentUser = student;
+        } else if (sid.length >= 4) {
+            nameInput.value = '';
+            nameInput.classList.remove('valid');
+            feedback.textContent = '✘ 学号未在名单中，请联系老师';
+            feedback.className = 'feedback error';
+            currentUser = null;
+        } else {
+            nameInput.value = '';
+            nameInput.classList.remove('valid');
+            currentUser = null;
+        }
+        
+        // Check if already completed
+        const completedKey = `quiz_${getQuizId()}_${sid}`;
+        const hasCompleted = localStorage.getItem(completedKey);
+        
+        if (currentUser && hasCompleted) {
+            if (code === currentQuiz.resetCode) {
+                feedback.innerHTML += '<br><span style="color:var(--secondary)">★ 重考码已确认，可重新考试</span>';
+                startBtn.disabled = false;
+            } else {
+                feedback.innerHTML += '<br><span style="color:var(--danger)">⚠️ 已完成此测验，如需重考请输入重考码</span>';
+                startBtn.disabled = true;
+            }
+        } else if (currentUser && code === currentQuiz.entryCode) {
+            startBtn.disabled = false;
+        } else if (currentUser && code === currentQuiz.resetCode) {
+            startBtn.disabled = false;
+        } else {
+            startBtn.disabled = true;
+        }
+    }
+    
+    idInput.addEventListener('input', validate);
+    codeInput.addEventListener('input', validate);
+    
+    startBtn.addEventListener('click', () => {
+        document.getElementById('headerName').textContent = currentUser.name;
+        startQuiz();
+    });
+}
+
+// ============================================
+// ANTI-CHEAT
+// ============================================
+function setupAntiCheat() {
+    // Tab switch detection
+    document.addEventListener('visibilitychange', () => {
+        if (document.getElementById('viewQuiz').classList.contains('active') && document.visibilityState === 'hidden') {
+            switchCount++;
+            showAntiCheatWarn(`⚠️ 切屏警告 (${switchCount}/${MAX_SWITCHES})`);
+            document.getElementById('switchCount').textContent = switchCount;
+            
+            if (switchCount >= MAX_SWITCHES) {
+                setTimeout(() => {
+                    alert('切屏次数已达上限，系统将自动提交试卷！');
+                    submitQuiz();
+                }, 500);
+            }
+        }
+    });
+    
+    // Disable shortcuts
+    document.addEventListener('keydown', e => {
+        // F12, Ctrl+Shift+I/J/C, Ctrl+U
+        if (e.key === 'F12' || 
+            (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key)) ||
+            (e.ctrlKey && e.key === 'u')) {
+            e.preventDefault();
+            showAntiCheatWarn('🚫 已检测到开发者工具尝试');
+            switchCount++;
+            return false;
+        }
+        
+        // PrintScreen
+        if (e.key === 'PrintScreen') {
+            switchCount++;
+            showAntiCheatWarn('📸 已检测到截屏操作');
+            navigator.clipboard?.writeText('截屏已被记录');
+        }
+        
+        // Ctrl+C/V/X (allow in inputs)
+        if (e.ctrlKey && ['c','v','x'].includes(e.key.toLowerCase())) {
+            if (!['INPUT','TEXTAREA'].includes(e.target.tagName)) {
+                e.preventDefault();
+            }
+        }
+    });
+    
+    // Disable right-click
+    document.addEventListener('contextmenu', e => e.preventDefault());
+    
+    // Disable copy/paste/drag
+    ['copy','cut','paste','dragstart','selectstart'].forEach(evt => {
+        document.addEventListener(evt, e => {
+            if (!['INPUT','TEXTAREA'].includes(e.target.tagName)) e.preventDefault();
+        });
+    });
+}
+
+function showAntiCheatWarn(msg) {
+    const warn = document.createElement('div');
+    warn.className = 'anti-cheat-warn';
+    warn.textContent = msg;
+    document.body.appendChild(warn);
+    setTimeout(() => warn.remove(), 2000);
+}
+
+// ============================================
+// QUIZ LOGIC
+// ============================================
+function startQuiz() {
+    startTime = Date.now();
+    timeLeft = currentQuiz.timeLimit;
+    switchCount = 0;
+    document.getElementById('switchCount').textContent = '0';
+    
+    // Seed random with student ID for consistent but unique selection
+    const seed = hashCode(currentUser.id + getQuizId());
+    const rng = seededRandom(seed);
+    
+    // Pick random questions
+    const allQs = [...currentQuiz.questions];
+    selectedQuestions = [];
+    const pickCount = Math.min(currentQuiz.totalPick, allQs.length);
+    
+    for (let i = 0; i < pickCount; i++) {
+        const idx = Math.floor(rng() * allQs.length);
+        const q = allQs.splice(idx, 1)[0];
+        
+        // Shuffle options (keep track of correct answer)
+        const correctText = q.options[q.answer];
+        const shuffled = [...q.options];
+        for (let j = shuffled.length - 1; j > 0; j--) {
+            const k = Math.floor(rng() * (j + 1));
+            [shuffled[j], shuffled[k]] = [shuffled[k], shuffled[j]];
+        }
+        const newAnswer = shuffled.indexOf(correctText);
+        
+        selectedQuestions.push({...q, options: shuffled, answer: newAnswer});
+    }
+    
+    userAnswers = new Array(selectedQuestions.length).fill(null);
+    currentIndex = 0;
+    
+    document.getElementById('qTotal').textContent = selectedQuestions.length;
+    
+    showView('viewQuiz');
+    renderQuestion();
+    startTimer();
+}
+
+function hashCode(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+    return Math.abs(hash);
+}
+
+function seededRandom(seed) {
+    return function() {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+    };
+}
+
+function renderQuestion() {
+    const q = selectedQuestions[currentIndex];
+    const total = selectedQuestions.length;
+    
+    // Progress
+    document.getElementById('progressBar').style.width = `${((currentIndex + 1) / total) * 100}%`;
+    document.getElementById('qNum').textContent = currentIndex + 1;
+    
+    // Question
+    const typeLabel = q.type === 'multiple' 
+        ? '<span class="type-badge type-multiple">多选</span>' 
+        : '<span class="type-badge type-single">单选</span>';
+    document.getElementById('questionText').innerHTML = `${typeLabel}${currentIndex + 1}. ${q.q}`;
+    
+    // Options
+    const optionsList = document.getElementById('optionsList');
+    optionsList.innerHTML = '';
+    
+    q.options.forEach((opt, idx) => {
+        const div = document.createElement('div');
+        div.className = 'option-item';
+        if (userAnswers[currentIndex] !== null && userAnswers[currentIndex].includes(idx)) {
+            div.classList.add('selected');
+        }
+        div.textContent = `${String.fromCharCode(65 + idx)}. ${opt}`;
+        div.onclick = () => selectOption(idx);
+        optionsList.appendChild(div);
+    });
+    
+    // Navigation
+    document.getElementById('btnPrev').style.display = currentIndex > 0 ? 'inline-block' : 'none';
+    document.getElementById('btnPrev').onclick = () => { currentIndex--; renderQuestion(); };
+    
+    const nextBtn = document.getElementById('btnNext');
+    nextBtn.textContent = currentIndex === total - 1 ? '✅ 提交测验' : '下一题 ➡';
+    nextBtn.disabled = userAnswers[currentIndex] === null;
+    nextBtn.onclick = () => {
+        if (currentIndex < total - 1) {
+            currentIndex++;
+            renderQuestion();
+        } else {
+            if (confirm('确认提交吗？提交后无法修改答案。')) {
+                submitQuiz();
+            }
+        }
+    };
+}
+
+function selectOption(idx) {
+    const q = selectedQuestions[currentIndex];
+    
+    if (q.type === 'multiple') {
+        if (!userAnswers[currentIndex]) userAnswers[currentIndex] = [];
+        const arr = userAnswers[currentIndex];
+        const pos = arr.indexOf(idx);
+        if (pos >= 0) arr.splice(pos, 1);
+        else arr.push(idx);
+        if (arr.length === 0) userAnswers[currentIndex] = null;
+    } else {
+        userAnswers[currentIndex] = [idx];
+    }
+    
+    renderQuestion();
+}
+
+function startTimer() {
+    const timerEl = document.getElementById('timer');
+    timerInterval = setInterval(() => {
+        timeLeft--;
+        const m = Math.floor(timeLeft / 60);
+        const s = timeLeft % 60;
+        timerEl.textContent = `⏱ ${m}:${s.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 180) {
+            timerEl.classList.add('danger');
+        }
+        
+        if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            alert('考试时间到，系统自动提交！');
+            submitQuiz();
+        }
+    }, 1000);
+}
+
+// ============================================
+// SUBMISSION
+// ============================================
+async function submitQuiz() {
+    clearInterval(timerInterval);
+    
+    const duration = Math.floor((Date.now() - startTime) / 1000);
+    let score = 0;
+    const details = [];
+    
+    selectedQuestions.forEach((q, i) => {
+        const userAns = userAnswers[i] || [];
+        const correct = JSON.stringify(userAns.sort()) === JSON.stringify([q.answer]);
+        if (correct) score += 10;
+        details.push({
+            q: q.id,
+            your: userAns.map(a => String.fromCharCode(65 + a)).join(','),
+            correct: String.fromCharCode(65 + q.answer),
+            ok: correct
+        });
+    });
+    
+    const totalScore = score;
+    
+    // Mark as completed
+    localStorage.setItem(`quiz_${getQuizId()}_${currentUser.id}`, 'true');
+    
+    // Save score locally
+    try {
+        const allScores = JSON.parse(localStorage.getItem('quiz_all_scores') || '[]');
+        allScores.push({
+            quiz: currentQuiz.title,
+            student_id: currentUser.id,
+            student_name: currentUser.name,
+            score: totalScore,
+            duration: duration,
+            switches: switchCount,
+            details: details,
+            timestamp: new Date().toISOString()
+        });
+        localStorage.setItem('quiz_all_scores', JSON.stringify(allScores));
+    } catch(e) { console.warn('Save error:', e); }
+    
+    // Show results immediately (no network delay)
+    showResults(totalScore, duration, details);
+}
+
+async function getFeishuToken() {
+    // No backend token available in static deployment
+    // Scores are saved locally - teacher can export via the admin panel
+    return '';
+}
+
+function showResults(score, duration, details) {
+    const el = document.getElementById('scoreDisplay');
+    el.textContent = `${score} / ${selectedQuestions.length * 10}`;
+    el.className = 'result-score ' + (score >= 60 ? 'pass' : 'fail');
+    
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    
+    document.getElementById('scoreText').innerHTML = score >= 60 
+        ? '🎉 恭喜通过！' 
+        : '😔 未达及格线（60分）';
+    
+    document.getElementById('resultDetail').innerHTML = `
+        <div>👤 <b>${currentUser.name}</b> (${currentUser.id})</div>
+        <div>⏱ 用时: ${minutes}分${seconds}秒</div>
+        <div>🔄 切屏次数: ${switchCount}</div>
+        <div>✅ 正确: ${details.filter(d=>d.ok).length} / ${details.length}</div>
+    `;
+    
+    // Check if retake code was used
+    const code = document.getElementById('entryCode').value.trim();
+    if (code === currentQuiz.resetCode) {
+        document.getElementById('btnRetake').style.display = 'inline-block';
+    }
+    
+    showView('viewResult');
+}
+
+function showReview() {
+    const list = document.getElementById('reviewList');
+    list.innerHTML = '';
+    
+    selectedQuestions.forEach((q, i) => {
+        const userAns = userAnswers[i] || [];
+        const correct = JSON.stringify(userAns.sort()) === JSON.stringify([q.answer]);
+        
+        const div = document.createElement('div');
+        div.className = `review-item ${correct ? 'correct' : 'wrong'}`;
+        
+        const userLetters = userAns.map(a => String.fromCharCode(65 + a)).join(', ');
+        const correctLetter = String.fromCharCode(65 + q.answer);
+        
+        div.innerHTML = `
+            <div class="review-q">${i + 1}. ${q.q}</div>
+            <div class="review-your ${correct ? '' : 'review-correct'}">
+                你的答案: <span class="your-answer">${userLetters || '未作答'}</span>
+                ${!correct ? `<br>正确答案: <span class="right-answer">${correctLetter}. ${q.options[q.answer]}</span>` : ''}
+            </div>
+        `;
+        list.appendChild(div);
+    });
+    
+    showView('viewReview');
+}
+
+// ============================================
+// UI HELPERS
+// ============================================
+function showView(id) {
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+}
+
+function showOverlay(show, text) {
+    const overlay = document.getElementById('overlay');
+    if (show) {
+        overlay.classList.add('active');
+        document.getElementById('overlayText').textContent = text || '加载中...';
+    } else {
+        overlay.classList.remove('active');
+    }
+}
+</script>
+</body>
+</html>
