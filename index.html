@@ -222,7 +222,11 @@ const STUDENTS = [
     {name:"韩治国",id:"3241711130"},{name:"刘逸",id:"3241711131"},{name:"彭嘉俊",id:"3241711132"},
     {name:"余静",id:"3241711133"},{name:"徐英河",id:"3241711134"},{name:"常伟林",id:"3241711135"},
     // 测试账号
-    {name:"测试1",id:"test01"},{name:"测试2",id:"test02"}
+    {name:"测试1",id:"test01"},{name:"测试2",id:"test02"},
+    {name:"测试3",id:"test03"},{name:"测试4",id:"test04"},
+    {name:"测试5",id:"test05"},{name:"测试6",id:"test06"},
+    {name:"测试7",id:"test07"},{name:"测试8",id:"test08"},
+    {name:"测试9",id:"test09"},{name:"测试10",id:"test10"}
 ];
 
 // Question Bank (add more quizzes here)
@@ -614,6 +618,10 @@ async function submitQuiz() {
     
     const totalScore = score;
     
+    // Determine exam type
+    const code = document.getElementById('entryCode').value.trim();
+    const examType = code === currentQuiz.resetCode ? '补试' : '初试';
+    
     // Mark as completed
     localStorage.setItem(`quiz_${getQuizId()}_${currentUser.id}`, 'true');
     
@@ -627,14 +635,42 @@ async function submitQuiz() {
             score: totalScore,
             duration: duration,
             switches: switchCount,
+            exam_type: examType,
             details: details,
             timestamp: new Date().toISOString()
         });
         localStorage.setItem('quiz_all_scores', JSON.stringify(allScores));
     } catch(e) { console.warn('Save error:', e); }
     
-    // Show results immediately (no network delay)
-    showResults(totalScore, duration, details);
+    // Submit to Feishu via Worker API
+    try {
+        const resp = await fetch(CONFIG.apiUrl + '/api/submit', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                quiz_title: currentQuiz.title,
+                quiz_id: getQuizId(),
+                student_id: currentUser.id,
+                student_name: currentUser.name,
+                score: totalScore,
+                duration: duration,
+                switch_count: switchCount,
+                exam_type: examType,
+                details: details.map(d => `Q${d.q}:${d.your||'?'}/${d.correct}${d.ok?'✓':'✗'}`).join(' | ')
+            })
+        });
+        const result = await resp.json();
+        if (result.success) {
+            console.log('成绩已提交到飞书:', result.record_id);
+        } else {
+            console.warn('飞书提交失败:', result.error);
+        }
+    } catch(e) {
+        console.warn('飞书提交网络错误:', e);
+    }
+    
+    // Show results
+    showResults(totalScore, duration, details, examType);
 }
 
 async function getFeishuToken() {
@@ -643,7 +679,7 @@ async function getFeishuToken() {
     return '';
 }
 
-function showResults(score, duration, details) {
+function showResults(score, duration, details, examType) {
     const el = document.getElementById('scoreDisplay');
     el.textContent = `${score} / ${selectedQuestions.length * 10}`;
     el.className = 'result-score ' + (score >= 60 ? 'pass' : 'fail');
@@ -655,8 +691,13 @@ function showResults(score, duration, details) {
         ? '🎉 恭喜通过！' 
         : '😔 未达及格线（60分）';
     
+    const typeLabel = examType === '补试' 
+        ? '<span style="color:var(--warning);font-weight:600">📝 补试</span>' 
+        : '<span style="color:var(--secondary);font-weight:600">📋 初试</span>';
+    
     document.getElementById('resultDetail').innerHTML = `
         <div>👤 <b>${currentUser.name}</b> (${currentUser.id})</div>
+        <div>📌 ${typeLabel}</div>
         <div>⏱ 用时: ${minutes}分${seconds}秒</div>
         <div>🔄 切屏次数: ${switchCount}</div>
         <div>✅ 正确: ${details.filter(d=>d.ok).length} / ${details.length}</div>

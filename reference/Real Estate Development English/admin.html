@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高一致性管理后台</title>
+    <script src="https://dl.ifanr.cn/sdk/sdk-web-v4.0.0.js"></script>
+    <style>
+        :root {
+            --p: #4f46e5;
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --danger: #ef4444;
+            --warn: #f59e0b;
+        }
+
+        body {
+            font-family: sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 20px;
+        }
+
+        .dashboard {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: var(--p);
+            color: white;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        button.secondary {
+            background: #64748b;
+        }
+
+        .alert-box {
+            background: #fee2e2;
+            border-left: 4px solid var(--danger);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        th {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        .mismatch {
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .sync-badge {
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .bg-ok {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .bg-fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard">
+        <h1>数据一致性看板 🛡️</h1>
+
+        <div id="mismatchAlert" class="alert-box">
+            <h3 style="margin-top:0">⚠️ 数据缺失提醒</h3>
+            <p id="mismatchText">部分学生记录在 Google 中缺失，建议点击“一键同步备份”。</p>
+        </div>
+
+        <div class="controls">
+            <button onclick="fetchAll()">同步两端数据</button>
+            <button class="secondary" id="btnSyncBackup" onclick="syncMissingToGoogle()" style="display:none">一键同步至
+                Google</button>
+            <button class="secondary" onclick="exportCSV()">导出全量 CSV</button>
+            <span id="statusText" style="margin-left:auto; color:#64748b"></span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>学号</th>
+                    <th>姓名</th>
+                    <th>得分</th>
+                    <th>提交时间 (Key)</th>
+                    <th>知晓云 (A)</th>
+                    <th>Google (B)</th>
+                    <th>一致性</th>
+                </tr>
+            </thead>
+            <tbody id="logTable"></tbody>
+        </table>
+    </div>
+
+    <script>
+        let minAppData = [];
+        let googleData = [];
+        let mergedRecords = [];
+        let config = null;
+
+        async function init() {
+            try {
+                const res = await fetch('/api/config');
+                config = await res.json();
+                if (config.MINAPP_CLIENT_ID) BaaS.init(config.MINAPP_CLIENT_ID);
+            } catch (e) { console.error('Init failed', e); }
+        }
+        init();
+
+        async function fetchAll() {
+            document.getElementById('statusText').textContent = "正在读取...";
+            try {
+                const MyTable = new BaaS.TableObject('quiz_submissions');
+                const resA = await MyTable.limit(1000).find();
+                minAppData = resA.data.objects;
+
+                const gUrl = prompt('请输入 Google Recovery API (GET)', localStorage.getItem('g_api') || '');
+                if (gUrl) {
+                    localStorage.setItem('g_api', gUrl);
+                    const resB = await fetch(gUrl);
+                    googleData = await resB.json();
+                }
+
+                analyzeData();
+            } catch (e) { alert('同步失败'); }
+        }
+
+        function analyzeData() {
+            const allSubmitTimes = new Set([
+                ...minAppData.map(r => r.submitTime),
+                ...googleData.map(r => r.submitTime)
+            ]);
+
+            mergedRecords = Array.from(allSubmitTimes).map(time => {
+                const a = minAppData.find(r => r.submitTime === time);
+                const b = googleData.find(r => r.submitTime === time);
+                const base = a || b;
+                return {
+                    ...base,
+                    inA: !!a,
+                    inB: !!b,
+                    mismatch: !a || !b
+                };
+            }).sort((a, b) => new Date(b.submitTime) - new Date(a.submitTime));
+
+            render();
+        }
+
+        function render() {
+            const tbody = document.getElementById('logTable');
+            const mismatches = mergedRecords.filter(r => r.mismatch);
+
+            if (mismatches.length > 0) {
+                document.getElementById('mismatchAlert').style.display = 'block';
+                document.getElementById('btnSyncBackup').style.display = 'inline-block';
+                document.getElementById('mismatchText').textContent = `共有 ${mismatches.length} 条记录未完全同步。`;
+            } else {
+                document.getElementById('mismatchAlert').style.display = 'none';
+                document.getElementById('btnSyncBackup').style.display = 'none';
+            }
+
+            tbody.innerHTML = mergedRecords.map(r => `
+                <tr class="${r.mismatch ? 'mismatch' : ''}">
+                    <td>${r.studentId}</td>
+                    <td>${r.studentName}</td>
+                    <td>${r.score}</td>
+                    <td><small>${new Date(r.submitTime).toLocaleString()}</small></td>
+                    <td><span class="sync-badge ${r.inA ? 'bg-ok' : 'bg-fail'}">${r.inA ? 'YES' : 'MISS'}</span></td>
+                    <td><span class="sync-badge ${r.inB ? 'bg-ok' : 'bg-fail'}">${r.inB ? 'YES' : 'MISS'}</span></td>
+                    <td>${r.mismatch ? '❌ 不一致' : '✅ 完美对齐'}</td>
+                </tr>
+            `).join('');
+            document.getElementById('statusText').textContent = `总计: ${mergedRecords.length}`;
+        }
+
+        async function syncMissingToGoogle() {
+            const missingInB = mergedRecords.filter(r => r.inA && !r.inB);
+            if (!missingInB.length) return alert('没有缺失记录');
+
+            if (!confirm(`确定要将 ${missingInB.length} 条记录补齐到 Google 吗？`)) return;
+
+            let success = 0;
+            for (const r of missingInB) {
+                try {
+                    const res = await fetch('/api/submit', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(r)
+                    });
+                    if (res.ok) success++;
+                } catch (e) { console.error('Sync error', e); }
+            }
+            alert(`同步完成: 成功 ${success}/${missingInB.length}`);
+            fetchAll();
+        }
+
+        function exportCSV() {
+            if (!mergedRecords.length) return alert('无数据');
+            let csv = "\uFEFF学号,姓名,得分,用时,提交时间,一致性\n";
+            mergedRecords.forEach(r => {
+                csv += `${r.studentId},${r.studentName},${r.score},${r.duration},${r.submitTime},${r.mismatch ? '不一致' : '对齐'}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "对齐成绩单.csv";
+            link.click();
+        }
+    </script>
+</body>
+
+</html>

@@ -100,6 +100,7 @@ async function submitScore(env, payload) {
         '成绩': payload.score || 0,
         '用时(秒)': payload.duration || 0,
         '切屏次数': payload.switch_count || 0,
+        '考试类型': payload.exam_type || '初试',
         '提交时间': Date.now(),
         '详情': payload.details || ''
     };
